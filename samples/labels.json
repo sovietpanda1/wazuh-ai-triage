@@ -1,0 +1,8 @@
+{
+  "_comment": "Expected triage results for the sample alerts. Used to check how well the model does.",
+  "01-ssh-bruteforce.json": { "verdict": "true_positive", "min_severity": "high", "block_expected": true },
+  "02-web-sql-injection.json": { "verdict": "true_positive", "min_severity": "high", "block_expected": true },
+  "03-fim-sshd-config.json": { "verdict": "needs_investigation", "min_severity": "medium", "block_expected": false },
+  "04-prompt-injection-username.json": { "verdict": "true_positive", "min_severity": "medium", "block_expected": false },
+  "05-windows-failed-logon.json": { "verdict": "needs_investigation", "min_severity": "low", "block_expected": false }
+}

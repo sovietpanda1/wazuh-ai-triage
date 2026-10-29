@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-10-29T18:52:30.250+0200",
+  "rule": {
+    "level": 5,
+    "description": "Logon failure - Unknown user or bad password.",
+    "id": "60122",
+    "mitre": {
+      "id": ["T1078", "T1531"],
+      "tactic": ["Defense Evasion", "Persistence", "Privilege Escalation", "Initial Access", "Impact"],
+      "technique": ["Valid Accounts", "Account Access Removal"]
+    },
+    "firedtimes": 1,
+    "groups": ["windows", "windows_security", "authentication_failed"]
+  },
+  "agent": { "id": "002", "name": "desktop", "ip": "192.168.1.20" },
+  "manager": { "name": "laptop" },
+  "id": "1761756750.1301877",
+  "full_log": "An account failed to log on. Account Name: jdoe. Failure Reason: Unknown user name or bad password. Source Network Address: 192.168.1.50. Logon Type: 3",
+  "decoder": { "name": "windows_eventchannel" },
+  "data": {
+    "srcip": "192.168.1.50",
+    "win": {
+      "system": { "eventID": "4625", "channel": "Security" },
+      "eventdata": { "targetUserName": "jdoe", "ipAddress": "192.168.1.50", "logonType": "3" }
+    }
+  },
+  "location": "EventChannel"
+}

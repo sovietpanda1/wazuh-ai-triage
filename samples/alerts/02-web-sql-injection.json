@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-10-29T18:20:03.118+0200",
+  "rule": {
+    "level": 7,
+    "description": "SQL injection attempt.",
+    "id": "31103",
+    "mitre": {
+      "id": ["T1190"],
+      "tactic": ["Initial Access"],
+      "technique": ["Exploit Public-Facing Application"]
+    },
+    "firedtimes": 1,
+    "groups": ["web", "accesslog", "attack", "sql_injection"]
+  },
+  "agent": { "id": "001", "name": "web01", "ip": "192.168.1.30" },
+  "manager": { "name": "laptop" },
+  "id": "1761754803.1102217",
+  "full_log": "198.51.100.23 - - [29/Oct/2026:18:20:03 +0200] \"GET /products.php?id=1%27%20UNION%20SELECT%20username,password%20FROM%20users-- HTTP/1.1\" 200 5123 \"-\" \"sqlmap/1.8\"",
+  "decoder": { "name": "web-accesslog" },
+  "data": {
+    "protocol": "GET",
+    "srcip": "198.51.100.23",
+    "id": "200",
+    "url": "/products.php?id=1%27%20UNION%20SELECT%20username,password%20FROM%20users--"
+  },
+  "location": "/var/log/apache2/access.log"
+}

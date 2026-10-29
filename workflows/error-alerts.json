@@ -1,0 +1,54 @@
+{
+  "name": "Wazuh AI Triage - Error Alerts",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "89aa1f38-11fd-5dae-91a3-e2cbeacc013a",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.TELEGRAM_API_BASE || 'https://api.telegram.org' }}/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, text: '⚠️ n8n workflow failed: ' + $json.workflow.name + '\\nNode: ' + ($json.execution.lastNodeExecuted || '-') + '\\nError: ' + String(($json.execution.error && $json.execution.error.message) || 'unknown').slice(0, 500) + '\\nExecution: ' + ($json.execution.url || $json.execution.id || '-') }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "cbba13f0-3c50-5470-969a-0b75a9c60868",
+      "name": "Telegram Error Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Telegram Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": []
+}

@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-10-29T18:31:57.004+0200",
+  "rule": {
+    "level": 7,
+    "description": "Integrity checksum changed.",
+    "id": "550",
+    "mitre": {
+      "id": ["T1565.001"],
+      "tactic": ["Impact"],
+      "technique": ["Stored Data Manipulation"]
+    },
+    "firedtimes": 1,
+    "groups": ["ossec", "syscheck", "syscheck_entry_modified", "syscheck_file"]
+  },
+  "agent": { "id": "000", "name": "laptop" },
+  "manager": { "name": "laptop" },
+  "id": "1761755517.1200413",
+  "full_log": "File '/etc/ssh/sshd_config' modified\nMode: realtime\nChanged attributes: size,mtime,md5,sha1,sha256\nSize changed from '3253' to '3301'",
+  "syscheck": {
+    "path": "/etc/ssh/sshd_config",
+    "mode": "realtime",
+    "event": "modified",
+    "changed_attributes": ["size", "mtime", "md5", "sha1", "sha256"]
+  },
+  "decoder": { "name": "syscheck_integrity_changed" },
+  "location": "syscheck"
+}

@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-10-29T18:12:44.512+0200",
+  "rule": {
+    "level": 10,
+    "description": "sshd: brute force trying to get access to the system. Non existent user.",
+    "id": "5712",
+    "mitre": {
+      "id": ["T1110"],
+      "tactic": ["Credential Access"],
+      "technique": ["Brute Force"]
+    },
+    "frequency": 8,
+    "firedtimes": 1,
+    "groups": ["syslog", "sshd", "authentication_failures"]
+  },
+  "agent": { "id": "000", "name": "laptop" },
+  "manager": { "name": "laptop" },
+  "id": "1761754364.1045893",
+  "full_log": "Oct 29 18:12:44 laptop sshd[48211]: Invalid user admin from 203.0.113.45 port 51834",
+  "predecoder": { "program_name": "sshd", "timestamp": "Oct 29 18:12:44", "hostname": "laptop" },
+  "decoder": { "parent": "sshd", "name": "sshd" },
+  "data": { "srcip": "203.0.113.45", "srcport": "51834", "srcuser": "admin" },
+  "location": "/var/log/auth.log"
+}

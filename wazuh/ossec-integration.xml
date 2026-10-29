@@ -1,0 +1,18 @@
+<!--
+  Add this block to /var/ossec/etc/ossec.conf on the Wazuh manager
+  (install-integration.sh does it for you), then restart the manager:
+    sudo systemctl restart wazuh-manager
+
+  hook_url : the n8n webhook of the "Wazuh AI Triage" workflow
+  api_key  : the shared secret; must match WEBHOOK_SECRET in n8n's .env
+  level    : only alerts at this level or higher are sent
+-->
+<ossec_config>
+  <integration>
+    <name>custom-n8n</name>
+    <hook_url>http://DESKTOP_IP:5678/webhook/wazuh-alert</hook_url>
+    <api_key>YOUR_WEBHOOK_SECRET</api_key>
+    <level>7</level>
+    <alert_format>json</alert_format>
+  </integration>
+</ossec_config>

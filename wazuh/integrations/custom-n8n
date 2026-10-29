@@ -1,0 +1,6 @@
+#!/bin/sh
+# Wazuh runs integrations by name: this wrapper starts custom-n8n.py
+# with the Python interpreter that ships with Wazuh.
+DIR_NAME="$(cd "$(dirname "$0")" && pwd -P)"
+WAZUH_PATH="$(cd "${DIR_NAME}/.." && pwd -P)"
+exec "${WAZUH_PATH}/framework/python/bin/python3" "${DIR_NAME}/$(basename "$0").py" "$@"

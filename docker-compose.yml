@@ -1,0 +1,32 @@
+# n8n for the Wazuh AI triage workflow.
+# The local LLM (LM Studio, Ollama, ...) runs on the host, not in Docker,
+# so it can use the GPU directly. n8n reaches it via host.docker.internal.
+#
+#   cp .env.example .env      # then edit .env
+#   docker compose up -d
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:-2.45.6}
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    env_file: .env
+    environment:
+      # The workflow reads its settings from environment variables.
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      # Analyse one alert at a time: one local GPU serves one request at a time anyway,
+      # and it keeps the dedup memory consistent between runs.
+      - N8N_CONCURRENCY_PRODUCTION_LIMIT=1
+      - GENERIC_TIMEZONE=${TZ:-Asia/Jerusalem}
+      - TZ=${TZ:-Asia/Jerusalem}
+      - N8N_DIAGNOSTICS_ENABLED=false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:
+    # Same volume name as "docker run -v n8n_data:...", so existing n8n data is kept.
+    name: n8n_data
