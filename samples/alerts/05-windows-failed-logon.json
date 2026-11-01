@@ -18,10 +18,19 @@
   "full_log": "An account failed to log on. Account Name: jdoe. Failure Reason: Unknown user name or bad password. Source Network Address: 192.168.1.50. Logon Type: 3",
   "decoder": { "name": "windows_eventchannel" },
   "data": {
-    "srcip": "192.168.1.50",
     "win": {
-      "system": { "eventID": "4625", "channel": "Security" },
-      "eventdata": { "targetUserName": "jdoe", "ipAddress": "192.168.1.50", "logonType": "3" }
+      "system": { "eventID": "4625", "channel": "Security", "providerName": "Microsoft-Windows-Security-Auditing" },
+      "eventdata": {
+        "targetUserName": "jdoe",
+        "targetDomainName": "WORKGROUP",
+        "ipAddress": "192.168.1.50",
+        "logonType": "3",
+        "workstationName": "WS-TEST",
+        "status": "0xc000006d",
+        "subStatus": "0xc0000064",
+        "failureReason": "%%2313",
+        "processName": "-"
+      }
     }
   },
   "location": "EventChannel"
