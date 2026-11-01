@@ -6,13 +6,20 @@ It answers the three HTTP calls the n8n workflow makes:
   GET  /api/v2/check             (AbuseIPDB)
   POST /bot<token>/sendMessage   (Telegram)
 and records every request, which you can read back with GET /_requests.
+Secrets in the record (API key headers, the bot token in the path) are replaced by
+"<redacted>". Only use placeholder keys with it anyway: it is a test tool.
+
+POST /_config {"llm": "ok"|"fail"|"invalid", "telegram": "ok"|"fail"} switches failure
+modes at runtime (used by tests/e2e/run_e2e.py). POST /_reset clears the record.
 
 Point the workflow at it with these environment variables:
   LLM_BASE_URL=http://<host>:8999/v1
   ABUSEIPDB_API_URL=http://<host>:8999/api/v2/check
   TELEGRAM_API_BASE=http://<host>:8999
 
-Run:  python3 tests/mock_services.py [--port 8999] [--llm-fail]
+Run:  python3 tests/mock_services.py [--host 127.0.0.1] [--port 8999] [--llm-fail]
+It listens on 127.0.0.1 by default. Use --host 0.0.0.0 only on an isolated test network
+(for example so n8n in Docker can reach it).
 """
 import argparse
 import json
@@ -21,7 +28,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 REQUESTS = []
-LLM_FAIL = False
+MODES = {"llm": "ok", "telegram": "ok"}
+SECRET_HEADERS = {"authorization", "key", "x-wazuh-token"}
 
 
 def fake_triage(prompt):
@@ -77,9 +85,9 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _record(self, body):
-        REQUESTS.append(
-            {"method": self.command, "path": self.path, "headers": dict(self.headers), "body": body}
-        )
+        headers = {k: ("<redacted>" if k.lower() in SECRET_HEADERS else v) for k, v in self.headers.items()}
+        path = re.sub(r"^/bot[^/]+/", "/bot<redacted>/", self.path)
+        REQUESTS.append({"method": self.command, "path": path, "headers": headers, "body": body})
 
     def do_GET(self):
         url = urlparse(self.path)
@@ -115,13 +123,21 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(raw) if raw else None
         except json.JSONDecodeError:
             body = raw
-        self._record(body)
         path = urlparse(self.path).path
+        if path == "/_config":
+            MODES.update({k: v for k, v in (body or {}).items() if k in MODES})
+            return self._send(200, MODES)
+        if path == "/_reset":
+            REQUESTS.clear()
+            MODES.update({"llm": "ok", "telegram": "ok"})
+            return self._send(200, {"ok": True})
+        self._record(body)
         if path == "/v1/chat/completions":
-            if LLM_FAIL:
+            if MODES["llm"] == "fail":
                 return self._send(500, {"error": {"message": "model crashed (simulated)"}})
             prompt = json.dumps(body)
-            content = json.dumps(fake_triage(prompt))
+            # "invalid" answers with JSON that is well-formed but breaks the schema.
+            content = json.dumps({} if MODES["llm"] == "invalid" else fake_triage(prompt))
             return self._send(
                 200,
                 {
@@ -134,24 +150,24 @@ class Handler(BaseHTTPRequestHandler):
                 },
             )
         if re.fullmatch(r"/bot[^/]+/sendMessage", path):
+            if MODES["telegram"] == "fail":
+                return self._send(502, {"ok": False, "description": "Bad Gateway (simulated)"})
             if not (body or {}).get("chat_id"):
                 return self._send(400, {"ok": False, "description": "Bad Request: chat_id is empty"})
             return self._send(200, {"ok": True, "result": {"message_id": len(REQUESTS)}})
-        if path == "/_reset":
-            REQUESTS.clear()
-            return self._send(200, {"ok": True})
         return self._send(404, {"error": "not found"})
 
 
 def main():
-    global LLM_FAIL
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--host", default="127.0.0.1", help="address to listen on (default: loopback only)")
     parser.add_argument("--port", type=int, default=8999)
     parser.add_argument("--llm-fail", action="store_true", help="make the LLM endpoint return HTTP 500")
     args = parser.parse_args()
-    LLM_FAIL = args.llm_fail
-    print(f"mock services listening on :{args.port}")
-    ThreadingHTTPServer(("0.0.0.0", args.port), Handler).serve_forever()
+    if args.llm_fail:
+        MODES["llm"] = "fail"
+    print(f"mock services listening on {args.host}:{args.port}", flush=True)
+    ThreadingHTTPServer((args.host, args.port), Handler).serve_forever()
 
 
 if __name__ == "__main__":

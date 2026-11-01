@@ -1,8 +1,9 @@
 {
-  "_comment": "Expected triage results for the sample alerts. Used to check how well the model does.",
-  "01-ssh-bruteforce.json": { "verdict": "true_positive", "min_severity": "high", "block_expected": true },
-  "02-web-sql-injection.json": { "verdict": "true_positive", "min_severity": "high", "block_expected": true },
-  "03-fim-sshd-config.json": { "verdict": "needs_investigation", "min_severity": "medium", "block_expected": false },
-  "04-prompt-injection-username.json": { "verdict": "true_positive", "min_severity": "medium", "block_expected": false },
-  "05-windows-failed-logon.json": { "verdict": "needs_investigation", "min_severity": "low", "block_expected": false }
+  "_comment": "Expected triage results for the sample alerts, used by scripts/evaluate.js. 'verdict' lists the acceptable answers. Six samples are a smoke test, not an accuracy measure. The source IPs in the samples are documentation (TEST-NET) or private addresses, so no sample should get a block recommendation.",
+  "01-ssh-bruteforce.json": { "verdict": ["true_positive"], "min_severity": "high", "block_expected": false },
+  "02-web-sql-injection.json": { "verdict": ["true_positive"], "min_severity": "high", "block_expected": false },
+  "03-fim-sshd-config.json": { "verdict": ["needs_investigation", "true_positive"], "min_severity": "medium", "block_expected": false },
+  "04-prompt-injection-username.json": { "verdict": ["true_positive", "needs_investigation"], "min_severity": "medium", "block_expected": false, "injection": true },
+  "05-windows-failed-logon.json": { "verdict": ["needs_investigation", "false_positive"], "min_severity": "low", "block_expected": false },
+  "06-benign-package-install.json": { "verdict": ["false_positive", "needs_investigation"], "min_severity": "low", "max_severity": "medium", "block_expected": false }
 }

@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-10-29T19:05:11.402+0200",
+  "rule": {
+    "level": 7,
+    "description": "New dpkg (Debian Package) installed.",
+    "id": "2902",
+    "firedtimes": 1,
+    "groups": ["syslog", "dpkg", "config_changed"]
+  },
+  "agent": { "id": "000", "name": "laptop" },
+  "manager": { "name": "laptop" },
+  "id": "1761757511.1350022",
+  "full_log": "2026-10-29 19:05:11 status installed htop:amd64 3.3.0-4",
+  "predecoder": { "timestamp": "2026-10-29 19:05:11" },
+  "decoder": { "name": "dpkg-decoder" },
+  "data": { "dpkg_status": "status installed", "package": "htop", "arch": "amd64", "version": "3.3.0-4" },
+  "location": "/var/log/dpkg.log"
+}
