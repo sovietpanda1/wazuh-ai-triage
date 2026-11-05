@@ -1,0 +1,77 @@
+{
+  "_comment": "Dedup contract shared by wazuh/integrations/custom-n8n.py and the n8n 'Sanitize & Validate' node. Both test suites check every case.",
+  "cases": [
+    {
+      "name": "network alert groups by source IP",
+      "alert": {"id": "1.1", "manager": {"name": "mgr"}, "agent": {"id": "000"}, "rule": {"id": "5712", "level": 10}, "data": {"srcip": "203.0.113.45"}},
+      "event_key": "evt|mgr|000|1.1",
+      "group_key": "grp|mgr|000|5712|10|ip:203.0.113.45"
+    },
+    {
+      "name": "data.src_ip is used when data.srcip is missing",
+      "alert": {"id": "1.2", "manager": {"name": "mgr"}, "agent": {"id": "000"}, "rule": {"id": "100", "level": 7}, "data": {"src_ip": "198.51.100.7"}},
+      "event_key": "evt|mgr|000|1.2",
+      "group_key": "grp|mgr|000|100|7|ip:198.51.100.7"
+    },
+    {
+      "name": "FIM change to sshd_config",
+      "alert": {"id": "2.1", "manager": {"name": "mgr"}, "agent": {"id": "000"}, "rule": {"id": "550", "level": 7}, "syscheck": {"path": "/etc/ssh/sshd_config", "event": "modified"}},
+      "event_key": "evt|mgr|000|2.1",
+      "group_key": "grp|mgr|000|550|7|fim:/etc/ssh/sshd_config:modified"
+    },
+    {
+      "name": "FIM change to sudoers on the same agent and rule is a different group",
+      "alert": {"id": "2.2", "manager": {"name": "mgr"}, "agent": {"id": "000"}, "rule": {"id": "550", "level": 7}, "syscheck": {"path": "/etc/sudoers", "event": "modified"}},
+      "event_key": "evt|mgr|000|2.2",
+      "group_key": "grp|mgr|000|550|7|fim:/etc/sudoers:modified"
+    },
+    {
+      "name": "Windows logon groups by nested IP, user (case-insensitive) and logon type",
+      "alert": {"id": "3.1", "manager": {"name": "mgr"}, "agent": {"id": "002"}, "rule": {"id": "60122", "level": 5}, "data": {"win": {"system": {"eventID": "4625"}, "eventdata": {"ipAddress": "192.168.1.50", "targetUserName": "JDoe", "logonType": "3"}}}},
+      "event_key": "evt|mgr|002|3.1",
+      "group_key": "grp|mgr|002|60122|5|win:192.168.1.50:jdoe:3"
+    },
+    {
+      "name": "Windows event without IP still groups by user",
+      "alert": {"id": "3.2", "manager": {"name": "mgr"}, "agent": {"id": "002"}, "rule": {"id": "60122", "level": 5}, "data": {"win": {"eventdata": {"ipAddress": "-", "targetUserName": "svc_backup", "logonType": "5"}}}},
+      "event_key": "evt|mgr|002|3.2",
+      "group_key": "grp|mgr|002|60122|5|win::svc_backup:5"
+    },
+    {
+      "name": "IPv6 is written in canonical form",
+      "alert": {"id": "4.1", "manager": {"name": "mgr"}, "agent": {"id": "001"}, "rule": {"id": "5712", "level": 10}, "data": {"srcip": "2001:DB8:0:0:0:0:0:1"}},
+      "event_key": "evt|mgr|001|4.1",
+      "group_key": "grp|mgr|001|5712|10|ip:2001:db8::1"
+    },
+    {
+      "name": "IPv4-mapped IPv6 is written in pure-hex form",
+      "alert": {"id": "4.2", "manager": {"name": "mgr"}, "agent": {"id": "001"}, "rule": {"id": "5712", "level": 10}, "data": {"srcip": "::ffff:127.0.0.1"}},
+      "event_key": "evt|mgr|001|4.2",
+      "group_key": "grp|mgr|001|5712|10|ip:::ffff:7f00:1"
+    },
+    {
+      "name": "an invalid IP is not a subject, so the alert is not grouped",
+      "alert": {"id": "4.3", "manager": {"name": "mgr"}, "agent": {"id": "001"}, "rule": {"id": "5712", "level": 10}, "data": {"srcip": "::::"}},
+      "event_key": "evt|mgr|001|4.3",
+      "group_key": null
+    },
+    {
+      "name": "no subject at all: never grouped",
+      "alert": {"id": "5.1", "manager": {"name": "mgr"}, "agent": {"id": "000"}, "rule": {"id": "510", "level": 7}, "data": {}},
+      "event_key": "evt|mgr|000|5.1",
+      "group_key": null
+    },
+    {
+      "name": "a different level is a different group",
+      "alert": {"id": "6.1", "manager": {"name": "mgr"}, "agent": {"id": "000"}, "rule": {"id": "5712", "level": 12}, "data": {"srcip": "203.0.113.45"}},
+      "event_key": "evt|mgr|000|6.1",
+      "group_key": "grp|mgr|000|5712|12|ip:203.0.113.45"
+    },
+    {
+      "name": "no alert id and no manager: no event key, agent name is used",
+      "alert": {"agent": {"name": "web01"}, "rule": {"id": "31103", "level": 7}, "data": {"srcip": "198.51.100.23"}},
+      "event_key": null,
+      "group_key": "grp|-|web01|31103|7|ip:198.51.100.23"
+    }
+  ]
+}

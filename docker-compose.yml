@@ -10,17 +10,23 @@ services:
     container_name: n8n
     restart: unless-stopped
     ports:
-      - "5678:5678"
+      # Reachable from the LAN so the Wazuh manager can send alerts. Limit who can
+      # connect with a firewall rule (only the Wazuh manager's IP; see docs/setup-he.md),
+      # or set N8N_BIND=127.0.0.1 if Wazuh runs on this same machine.
+      - "${N8N_BIND:-0.0.0.0}:5678:5678"
     env_file: .env
     environment:
       # The workflow reads its settings from environment variables.
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
       # Analyse one alert at a time: one local GPU serves one request at a time anyway,
-      # and it keeps the dedup memory consistent between runs.
+      # and it keeps the dedup memory consistent between runs. This is not a durable
+      # queue: alerts waiting here are lost if n8n restarts (see README, "Reliability").
       - N8N_CONCURRENCY_PRODUCTION_LIMIT=1
       - GENERIC_TIMEZONE=${TZ:-Asia/Jerusalem}
       - TZ=${TZ:-Asia/Jerusalem}
       - N8N_DIAGNOSTICS_ENABLED=false
+      # Wazuh alerts are small: refuse request bodies over 1 MB.
+      - N8N_PAYLOAD_SIZE_MAX=1
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

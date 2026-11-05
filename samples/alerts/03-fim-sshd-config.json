@@ -20,7 +20,17 @@
     "path": "/etc/ssh/sshd_config",
     "mode": "realtime",
     "event": "modified",
-    "changed_attributes": ["size", "mtime", "md5", "sha1", "sha256"]
+    "changed_attributes": ["size", "mtime", "md5", "sha1", "sha256"],
+    "size_before": "3253",
+    "size_after": "3301",
+    "perm_after": "rw-r--r--",
+    "uname_after": "root",
+    "gname_after": "root",
+    "mtime_after": "2026-10-29T18:31:56",
+    "md5_after": "5d41402abc4b2a76b9719d911017c592",
+    "sha1_after": "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d",
+    "sha256_after": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+    "diff": "(file content diff; the workflow leaves it out of the analysis on purpose)"
   },
   "decoder": { "name": "syscheck_integrity_changed" },
   "location": "syscheck"
