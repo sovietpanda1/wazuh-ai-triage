@@ -18,10 +18,11 @@ services:
     environment:
       # The workflow reads its settings from environment variables.
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
-      # Analyse one alert at a time: one local GPU serves one request at a time anyway,
-      # and it keeps the dedup memory consistent between runs. This is not a durable
-      # queue: alerts waiting here are lost if n8n restarts (see README, "Reliability").
-      - N8N_CONCURRENCY_PRODUCTION_LIMIT=1
+      # No N8N_CONCURRENCY_PRODUCTION_LIMIT on purpose: with a limit, a queued run cannot
+      # even answer "202 accepted", so while the model is busy Wazuh times out, retries and
+      # sends duplicates. Alerts are accepted at once and wait for the model at the LLM
+      # server instead (see README, "Reliability"). Not a durable queue: runs waiting
+      # here are lost if n8n restarts.
       - GENERIC_TIMEZONE=${TZ:-Asia/Jerusalem}
       - TZ=${TZ:-Asia/Jerusalem}
       - N8N_DIAGNOSTICS_ENABLED=false

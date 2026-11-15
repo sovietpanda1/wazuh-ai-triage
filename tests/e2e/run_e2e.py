@@ -20,6 +20,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -177,7 +178,6 @@ def main():
         "N8N_RUNNERS_BROKER_PORT": str(N8N_PORT + 1),
         "N8N_DIAGNOSTICS_ENABLED": "false",
         "N8N_BLOCK_ENV_ACCESS_IN_NODE": "false",
-        "N8N_CONCURRENCY_PRODUCTION_LIMIT": "1",
         "N8N_PAYLOAD_SIZE_MAX": "1",
         "WEBHOOK_SECRET": SECRET,
         "LLM_BASE_URL": f"{mock_url}/v1",
@@ -259,6 +259,23 @@ def main():
         msgs = wait_for(lambda: telegram_messages(), timeout=60) or []
         check(bool(msgs) and "analysis failed" in msgs[0], "message says the analysis failed")
         check(bool(msgs) and "would block" not in msgs[0], "no block recommendation without a valid answer")
+
+        print("A slow model does not delay the answer to Wazuh (no duplicate sends)")
+        mock("/_reset", {})
+        mock("/_config", {"llm_delay": 15})
+        first = threading.Thread(target=http, args=("POST", hook,
+                                 sample("02-web-sql-injection.json", id="e2e.slow.1", **{"data.srcip": "198.51.100.71"}), auth),
+                                 kwargs={"timeout": 60})
+        first.start()
+        wait_for(lambda: any(r["path"].endswith("/chat/completions") for r in mock("/_requests")), timeout=30)
+        started = time.time()
+        status, _ = http("POST", hook, sample("03-fim-sshd-config.json", id="e2e.slow.2",
+                                              **{"syscheck.path": "/etc/hosts"}), auth, timeout=30)
+        took = time.time() - started
+        check(status == 202 and took < 5, f"second alert answered while the model is busy ({status} in {took:.1f}s)")
+        first.join()
+        msgs = wait_for(lambda: len(telegram_messages()) >= 2 and telegram_messages(), timeout=90) or []
+        check(len(msgs) == 2, "both alerts are analysed once each")
 
         print("F5: a Telegram failure is retried and then fails the execution")
         mock("/_reset", {})

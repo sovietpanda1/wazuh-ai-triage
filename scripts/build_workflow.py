@@ -137,7 +137,9 @@ NODES = [
             "sendBody": True,
             "specifyBody": "json",
             "jsonBody": "={{ JSON.stringify($json.llm_request) }}",
-            "options": {"timeout": 300000},
+            # Long: with a burst of alerts, a request waits for the ones before it at the
+            # LLM server (a local GPU answers one at a time).
+            "options": {"timeout": 1800000},
         },
     },
     code("Parse & Score", "parse-score.js", [2200, 300], mode="runOnceForEachItem"),

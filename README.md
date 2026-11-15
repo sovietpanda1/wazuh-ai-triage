@@ -116,7 +116,8 @@ What is guaranteed and what is not, in this version:
 - **Inside n8n**: an accepted alert is analysed after the `202` answer. If n8n restarts in the middle, that alert is lost from this pipeline (it is still in Wazuh). n8n here is not a durable queue; making it one (n8n queue mode or an outbox) is on the roadmap.
 - **Telegram**: 3 tries. If all fail, the execution is marked as failed, the optional error workflow runs, and you can retry the execution in n8n.
 - **Delivery is at least once**, not exactly once: if n8n got an alert but its answer was lost, the replay is dropped by the event key, but a Telegram message whose answer was lost can arrive twice.
-- **Capacity**: `N8N_CONCURRENCY_PRODUCTION_LIMIT=1` analyses one alert at a time. If one analysis takes 30 seconds, that is about 2 alerts per minute. Raise the Wazuh level or the dedup window if alerts pile up.
+- **Capacity**: n8n accepts every alert at once (`202`) and the analyses wait for the model at the LLM server, which on one local GPU answers about one at a time. If one analysis takes a minute, that is about 1 alert per minute; a request that waits more than 30 minutes is reported as "analysis failed" with the Wazuh severity. Raise the Wazuh level or the dedup window if alerts pile up.
+- **Why there is no n8n concurrency limit**: with `N8N_CONCURRENCY_PRODUCTION_LIMIT=1` a queued run cannot even send its `202`, so while the model was busy `custom-n8n.py` timed out after 10 s, retried and spooled alerts that n8n had in fact received, and each one was analysed up to three times. Found in the live lab test; `tests/e2e/run_e2e.py` now checks that a slow model does not delay the answer.
 
 ## Quick start
 
@@ -168,7 +169,7 @@ All settings are environment variables in `.env`:
 | `LLM_BASE_URL` | `http://host.docker.internal:1234/v1` | Any OpenAI-compatible server. Ollama: `http://host.docker.internal:11434/v1`. |
 | `LLM_MODEL` | `qwen/qwen3.5-9b` | Model id as the server lists it (`/v1/models`). |
 | `LLM_API_KEY` | `local` | Only needed if your server checks it. |
-| `LLM_MAX_TOKENS` | `2048` | Longest answer the model may write. A cut-off answer counts as a failed analysis. |
+| `LLM_MAX_TOKENS` | `2048` (`.env.example`: `6144`) | Longest answer the model may write, thinking included. A cut-off answer counts as a failed analysis. Prompt + answer must fit the model's context length (LM Studio loads 8192 by default). |
 | `ABUSEIPDB_API_KEY` | (empty) | Free key from abuseipdb.com. Empty skips the lookup. |
 | `TELEGRAM_ENABLED` | `true` | `false` keeps results in n8n only (nothing goes to Telegram). |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | (empty) | From @BotFather and your chat with the bot. |
@@ -177,8 +178,10 @@ All settings are environment variables in `.env`:
 | `BLOCK_THRESHOLD` | `80` | Risk score (1-100) at which a block is suggested (dry-run). An invalid value turns block suggestions off and says so in the message. |
 | `WHITELIST_CIDRS` | (empty) | Comma-separated IPv4/IPv6 addresses or CIDRs that must never be blocked. Invalid entries are reported in the message. |
 
-`docker-compose.yml` sets `N8N_CONCURRENCY_PRODUCTION_LIMIT=1`, so alerts are analysed one at a
-time. A single local GPU handles one request at a time anyway, and it keeps n8n's dedup state consistent.
+`docker-compose.yml` sets no n8n concurrency limit, so every alert gets its `202` at once (see
+"Reliability"). If your LLM server runs several requests in parallel, they share its context
+length; if answers get cut off under load, set it to one request at a time (in LM Studio, the
+model's parallel / concurrent predictions setting) or lower `LLM_MAX_TOKENS`.
 
 The workflow reads its settings with `$env`, which is why the compose file sets
 `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`. That lets every Code node read every variable in `.env`,
