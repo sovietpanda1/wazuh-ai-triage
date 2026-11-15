@@ -180,8 +180,9 @@ All settings are environment variables in `.env`:
 
 `docker-compose.yml` sets no n8n concurrency limit, so every alert gets its `202` at once (see
 "Reliability"). If your LLM server runs several requests in parallel, they share its context
-length; if answers get cut off under load, set it to one request at a time (in LM Studio, the
-model's parallel / concurrent predictions setting) or lower `LLM_MAX_TOKENS`.
+length; under a burst that shows up as cut-off answers or `Context size has been exceeded`
+(seen in the lab with LM Studio's default). Set it to one request at a time (LM Studio: the
+model's load setting **Max Concurrent Predictions** = 1), so requests wait in its queue.
 
 The workflow reads its settings with `$env`, which is why the compose file sets
 `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`. That lets every Code node read every variable in `.env`,

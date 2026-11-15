@@ -162,6 +162,7 @@ Wazuh יזהה את זה כ-brute force (רמה 10), ותוך כמה שניות 
 | הסקריפט מקבל HTTP 400 | הקובץ שנשלח הוא לא התראת Wazuh תקינה. |
 | שלב LLM Triage נכשל עם connection refused | ש-LM Studio פתוח, שהשרת ב-Running ושהמודל טעון. אם עדיין לא עובד, הפעל בהגדרות השרת של LM Studio את **Serve on Local Network**. |
 | ההודעה אומרת `model reply was cut off (raise LLM_MAX_TOKENS)` | המודל "חשב" יותר מדי ולא נשאר לו מקום לתשובה. ב-`.env` שים `LLM_MAX_TOKENS=6144` (אם המודל טעון ב-LM Studio עם Context Length של 8192), ואז `docker compose up -d --force-recreate`. |
+| ההודעה אומרת `Context size has been exceeded` | LM Studio מריץ כמה ניתוחים במקביל, והם חולקים את ה-Context Length של המודל. בהגדרות הטעינה של המודל ב-LM Studio שים **Max Concurrent Predictions** על 1 ולחץ Reload. כך הבקשות מחכות בתור ומטופלות אחת אחרי השנייה. |
 | ב-`integrations.log` בנייד יש `timed out` וכל התראה מגיעה כמה פעמים | יש לך `docker-compose.yml` ישן עם `N8N_CONCURRENCY_PRODUCTION_LIMIT=1`. הורד את הגרסה העדכנית והרץ `docker compose up -d --force-recreate`. |
 | הניתוח לוקח הרבה זמן | Qwen3.5 "חושב" לפני שהוא עונה. זה תקין, אבל אם זה מפריע, נסה מודל קטן יותר או כבה את ה-thinking בהגדרות המודל ב-LM Studio. |
 | ההרצה נעצרת בשלב Accepted? | הבקשה נדחתה (401/400/503, ראו למעלה). |
