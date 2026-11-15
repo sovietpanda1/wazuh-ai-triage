@@ -9,7 +9,9 @@
 // Alerts with no group_key (not enough data to tell events apart) are never grouped.
 //
 // Note: n8n saves this memory only after a run ends successfully, and only for
-// production runs (not editor test runs). It is a best-effort filter, not storage.
+// production runs (not editor test runs). Runs that overlap (a burst of alerts) do
+// not see each other's entries. It is a best-effort filter, not storage: the main
+// dedup is on the Wazuh side (custom-n8n.py, with a file lock).
 
 const DEFAULT_WINDOW_SECONDS = 600;
 const rawWindow = String($env.DEDUP_WINDOW_SECONDS ?? '').trim();

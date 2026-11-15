@@ -9,8 +9,9 @@ and records every request, which you can read back with GET /_requests.
 Secrets in the record (API key headers, the bot token in the path) are replaced by
 "<redacted>". Only use placeholder keys with it anyway: it is a test tool.
 
-POST /_config {"llm": "ok"|"fail"|"invalid", "telegram": "ok"|"fail"} switches failure
-modes at runtime (used by tests/e2e/run_e2e.py). POST /_reset clears the record.
+POST /_config {"llm": "ok"|"fail"|"invalid", "telegram": "ok"|"fail", "llm_delay": <seconds>}
+switches failure modes at runtime; llm_delay makes the model slow, like a local one
+(used by tests/e2e/run_e2e.py). POST /_reset clears the record.
 
 Point the workflow at it with these environment variables:
   LLM_BASE_URL=http://<host>:8999/v1
@@ -24,11 +25,12 @@ It listens on 127.0.0.1 by default. Use --host 0.0.0.0 only on an isolated test 
 import argparse
 import json
 import re
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 REQUESTS = []
-MODES = {"llm": "ok", "telegram": "ok"}
+MODES = {"llm": "ok", "telegram": "ok", "llm_delay": 0}
 SECRET_HEADERS = {"authorization", "key", "x-wazuh-token"}
 
 
@@ -129,10 +131,11 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, MODES)
         if path == "/_reset":
             REQUESTS.clear()
-            MODES.update({"llm": "ok", "telegram": "ok"})
+            MODES.update({"llm": "ok", "telegram": "ok", "llm_delay": 0})
             return self._send(200, {"ok": True})
         self._record(body)
         if path == "/v1/chat/completions":
+            time.sleep(float(MODES["llm_delay"] or 0))
             if MODES["llm"] == "fail":
                 return self._send(500, {"error": {"message": "model crashed (simulated)"}})
             prompt = json.dumps(body)
