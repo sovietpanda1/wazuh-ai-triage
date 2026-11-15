@@ -10,9 +10,16 @@ and the notification goes to Telegram. The Telegram message contains the host na
 IPs, the rule and the AI summary. Set `TELEGRAM_ENABLED=false` to keep everything local, or
 `NOTIFY_REDACT=true` to hide host and user names. A local model does not make the whole system local.
 
-> **Status:** MVP, for a lab. The workflow is tested end-to-end on a real n8n 2.45.6 against the
-> mock services in [`tests/`](tests/) (in CI too). It has not yet been measured against a live Wazuh
-> manager and a real model, and it should not be your only alert path. Blocking is dry-run only.
+> **Status:** MVP, for a lab. It runs end-to-end in a two-machine home lab (Wazuh manager on an
+> Ubuntu laptop, n8n + LM Studio with Qwen3.5 9B on a Windows desktop with an RTX 4060), and on a
+> real n8n 2.45.6 against the mock services in [`tests/`](tests/) in CI. Accuracy has not been
+> measured yet, and it should not be your only alert path. Blocking is dry-run only.
+
+![A real SSH brute force alert from the lab, triaged by the local model](docs/images/telegram-brute-force.png)
+
+*A real SSH brute force from the lab (10 failed logins for a non-existent user). The model called
+it a false positive because it came from `127.0.0.1`, and the priority policy did not let that
+silence a level 10 Wazuh alert: it was flagged **NEEDS HUMAN REVIEW** (see "Priority policy").*
 
 ## What it does
 
@@ -32,6 +39,8 @@ flowchart LR
   N <-->|IP reputation| A[AbuseIPDB]
   N -->|incident summary| T[Telegram]
 ```
+
+![The n8n workflow](docs/images/n8n-workflow.png)
 
 | Step | Node | What happens |
 | --- | --- | --- |
@@ -232,11 +241,37 @@ node scripts/evaluate.js --base-url http://localhost:1234/v1 --model qwen/qwen3.
 
 CI runs layers 1 and 2 and a gitleaks secret scan on every push.
 
+## Lab results and lessons learned
+
+The first live run (Wazuh manager on Ubuntu 24.04, LM Studio with Qwen3.5 9B Q4 on an
+RTX 4060 8 GB) worked end to end: a file change to `/etc/ssh/sshd_config`, package installs,
+CIS benchmark (SCA) changes and an SSH brute force all reached Telegram with an analysis. It
+also found problems that the mock-based tests could not:
+
+- **A slow model broke delivery.** n8n was limited to one run at a time, so while the model was
+  busy (1-2 minutes per alert) n8n could not even answer `202`. The Wazuh side timed out after 10 s,
+  retried and spooled alerts that n8n had in fact received, and each alert was analysed up to three
+  times. Fix: no n8n concurrency limit, a 30 minute LLM timeout, and an end-to-end test with a slow
+  mock model that fails on the old setup.
+- **The queue belongs at the model server.** Without the n8n limit, a burst reached LM Studio at
+  once; its parallel predictions share the model's context, and they failed with
+  `Context size has been exceeded`. Setting LM Studio's *Max Concurrent Predictions* to 1 fixed it.
+- **Reasoning models need a token budget.** Qwen3.5 "thinks" before it answers. With
+  `LLM_MAX_TOKENS=2048` the thinking used the whole budget and the answer was cut off (reported as
+  "analysis failed", never as a silent pass). 6144 fits LM Studio's default 8192 context.
+- **A small local model is not consistent.** The same kind of alert (a new `sshd` system user) got
+  `needs_investigation` once and `false_positive` the next time. This is why the model's verdict
+  never lowers a high Wazuh severity on its own, and why accuracy needs a proper evaluation set.
+- **Level 7 is noisy on a fresh host.** One `apt install openssh-server` produced about ten alerts
+  (new packages, a new system user, SCA score changes). On a slow local model that is a long queue,
+  so the minimum level and the dedup window are real tuning knobs, not defaults to forget.
+
 ## Roadmap
 
 - [x] MVP: webhook, sanitization, two-layer dedup, AbuseIPDB, local LLM triage, risk score, Telegram
 - [x] Fixes from the first code review: dedup contract, schema validation, fail-closed webhook, IP parsing, spool for failed sends, priority policy, end-to-end tests
-- [ ] Live test with Wazuh + LM Studio (read-only pilot), tune the prompt, measure missed alerts and wrong recommendations
+- [x] Live test with Wazuh + LM Studio in a home lab (see "Lab results and lessons learned")
+- [ ] Tune the prompt, measure missed alerts and wrong recommendations on real alerts
 - [ ] Durable queue inside n8n (queue mode or an outbox) and a timed summary for suppressed counts
 - [ ] More anonymised real alerts and injection cases for `scripts/evaluate.js`
 - [ ] VirusTotal lookups for file hashes (FIM / malware alerts)
