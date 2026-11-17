@@ -132,7 +132,11 @@ class N8n:
             sys.exit("n8n did not become ready")
 
     def _healthy(self):
-        return http("GET", f"http://127.0.0.1:{N8N_PORT}/healthz", timeout=2)[0] == 200
+        # /healthz answers as soon as the HTTP server is up, before the database
+        # migrations finish. A CLI command run then (import:workflow) races the
+        # server's migrations on the same SQLite file and fails at random.
+        # /healthz/readiness waits until the database is connected and migrated.
+        return http("GET", f"http://127.0.0.1:{N8N_PORT}/healthz/readiness", timeout=2)[0] == 200
 
     def stop(self):
         if self.docker:
